@@ -1,0 +1,69 @@
+#include <WiFi.h>
+#include <SinricPro.h>
+#include <SinricProSwitch.h>
+
+// Replace with your Wi-Fi credentials
+const char* ssid = "your username";
+const char* password = "your password";
+
+// Replace with your Sinric Pro credentials
+#define APP_KEY "" // Your Sinric Pro API Key
+#define APP_SECRET "" // Your Sinric Pro App Secret
+
+// Replace with your device IDs
+#define SWITCH_ID_1 "" // Replace with Device ID for Light 1
+#define SWITCH_ID_2 "" // Replace with Device ID for Light 2
+
+// GPIO pins for the relays
+#define RELAY1_PIN 5
+#define RELAY2_PIN 18
+
+// Callback for Light 1
+bool onSwitch1(const String &deviceId, bool state) {
+  Serial.printf("Device %s turned %s\n", deviceId.c_str(), state ? "ON" : "OFF");
+  digitalWrite(RELAY1_PIN, state ? LOW : HIGH); // Relays are active LOW
+  return true; // Report success
+}
+
+// Callback for Light 2
+bool onSwitch2(const String &deviceId, bool state) {
+  Serial.printf("Device %s turned %s\n", deviceId.c_str(), state ? "ON" : "OFF");
+  digitalWrite(RELAY2_PIN, state ? LOW : HIGH); // Relays are active LOW
+  return true; // Report success
+}
+
+void setup() {
+  // Start serial communication
+  Serial.begin(115200);
+
+  // Set GPIO pins as outputs
+  pinMode(RELAY1_PIN, OUTPUT);
+  pinMode(RELAY2_PIN, OUTPUT);
+
+  // Initialize relays as OFF
+  digitalWrite(RELAY1_PIN, HIGH);
+  digitalWrite(RELAY2_PIN, HIGH);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.println("Connecting to Wi-Fi...");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println("\nWi-Fi connected.");
+
+  // Sinric Pro setup
+  SinricProSwitch& mySwitch1 = SinricPro[SWITCH_ID_1];
+  SinricProSwitch& mySwitch2 = SinricPro[SWITCH_ID_2];
+
+  mySwitch1.onPowerState(onSwitch1);
+  mySwitch2.onPowerState(onSwitch2);
+
+  SinricPro.begin(APP_KEY, APP_SECRET);
+}
+
+void loop() {
+  // Handle Sinric Pro communication
+  SinricPro.handle();
+}
